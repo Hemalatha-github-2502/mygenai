@@ -1,0 +1,200 @@
+CREATE OR REPLACE PROCEDURE `gcp-ent-sat-dev.BQ_DEV_SAT_DM.SP_OUTBOUND_SAT_ADJ_DLY`(IN p_ARGS INT64, IN p_DELIMITER STRING)
+BEGIN 
+
+DECLARE REC_INS_TS STRING;
+DECLARE FILEDATE STRING;
+
+SET REC_INS_TS=(SELECT FORMAT_TIMESTAMP("%F %T", CURRENT_TIMESTAMP(), "America/New_York"));
+--REC_INS_TS holds EST.
+SET FILEDATE = (SELECT SUBSTRING(CAST(FORMAT_TIMESTAMP("%Y%m%d", CURRENT_TIMESTAMP(), "America/New_York") AS STRING),3,6));
+--FILEDATE can be used in CTL/DTL/TRG file names.
+
+#####################################################################
+------------------------ CREATE DETAIL TABLE ------------------------
+#####################################################################
+
+CREATE OR REPLACE TABLE `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY` AS 
+(
+SELECT 
+ DRV.DTL_DRI_NR AS SAT_DTL_DRI_NR
+,REF.DTL_DRI_NR AS RASP_DTL_DRI_NR
+,DRV.DTL_REC_ID AS SAT_DTL_REC_ID
+,IFNULL(DRV.adj_cd,'~') AS SAT_ADJ_CD
+,IFNULL(REC_TYP_TE,'~') AS REC_TYP_TE
+,IFNULL(ORG_REG_DIS_NR,'~') AS ORG_REG_DIS_NR
+,IFNULL(DRV.ORG_CNY_CD,'~') AS ORG_CNY_CD
+,IFNULL(DTN_REG_DIS_NR,'~') AS DTN_REG_DIS_NR
+,IFNULL(DRV.DTN_CNY_CD,'~') AS DTN_CNY_CD
+,IFNULL(PRO_REG_DIS_NR,'~') AS PRO_REG_DIS_NR
+,IFNULL(PRO_CNY_CD,'~') AS PRO_CNY_CD
+,IFNULL(BTO_REG_DIS_NR,'~') AS BTO_REG_DIS_NR
+,IFNULL(DRV.BTO_CNY_CD,'~') AS BTO_CNY_CD
+,IFNULL(CLN_REG_DIS_NR,'~') AS CLN_REG_DIS_NR
+,IFNULL(DRV.CLN_CNY_CD,'~') AS CLN_CNY_CD
+,IFNULL(CAST(CON_GRS_AMT AS NUMERIC),0.0) AS CON_GRS_AMT
+,IFNULL(CAST(CON_INC_AMT AS NUMERIC),0.0) AS CON_INC_AMT
+,IFNULL(CAST(TAX_TOT_AMT AS NUMERIC),0.0) AS TOT_TAX_A
+,IFNULL(CAST(TRS_RVN_TXB_AMT AS NUMERIC),0.0) AS TRS_RVN_TXB_A
+,IFNULL(TAX_RATE,0) AS TAX_RATE
+,IFNULL(PKG_VOL,0) AS CON_STAT_QY
+,IFNULL(CHG_TYP_CD,'~') AS CHG_TYP_CD
+,IFNULL(ORL_PYE_TYP_CD,'~') AS ORL_PYE_TYP_CD
+,IFNULL(TRACKING_NBR,'~') AS PKG_TCK_NR
+,IFNULL(REC_STS_CD,'~') AS REC_STS_CD
+,IFNULL(ADJ_TRS_TYP_CD,'~') AS ADJ_TRS_TYP_CD
+,IFNULL(INV_GRP_CD,'~') AS INV_GRP_CD
+,IFNULL(SOT_SMT_XPT_DT,'2222-01-01') AS SOT_SMT_XPT_DT
+,IFNULL(SVC_FEA_TYP_CD,'~') AS SVC_FEA_TYP_CD
+,IFNULL(SVC_TYP_CD,'~') AS SVC_TYP_CD
+,IFNULL(PKG_CHA_TYP_CD,'~') AS PKG_CHA_TYP_CD
+,IFNULL(PKG_ACQ_MTH_TYP_CD,'~') AS PKG_ACQ_MTH_TYP_CD
+,IFNULL(MVM_DRC_CD,'~') AS MVM_DRC_CD
+,IFNULL(CCY_CD,'~') AS CCY_CD
+,IFNULL(PMT_MDA_TYP_CD,'~') AS PMT_MDA_TYP_CD
+,REF.WND_DT AS WND_DT
+,IFNULL(TAG_TRANS_ID,'~') AS TAG_TRANS_ID
+,IFNULL(AC_NR,'~') AS AC_NR
+,IFNULL(REF.BPF_INV_NR,'~') AS BPF_INV_IR
+,IFNULL(CAST(REF.INV_DT AS STRING),'') AS INV_DT
+,IFNULL(SHP_REC_NR,'~') AS SHP_REC_NR
+,IFNULL(SHP_REC_LIN_NR,0) AS SHP_REC_LIN_NR
+,IFNULL(CAST(REF.TRS_RTG_DT AS STRING),'') AS TRS_RTG_DT
+,IFNULL(TRS_DAT_XRF_TE,'~') AS TRS_DAT_XRF_TE
+,IFNULL(CAST(REC_PU_DT AS STRING),'') AS REC_PU_DT
+,IFNULL(ACT_PRN_NR,'~') AS ACT_PRN_NR
+,IFNULL(INF_SRC_TYP_CD,'~') AS INF_SRC_TYP_CD
+,IFNULL(CAST(CON_NET_AMT AS NUMERIC),0.0) AS ORG_CHG_FNA_NET_AMT
+,CONCAT(CBL_REC_TYP_CD,REC_SUB_TYP_CD) AS REC_TYP_IR
+,IFNULL(DRV.SHIPMENT_NBR,'~') AS NUM_SHPMNT_CNTL
+,IFNULL(DSL_DOSSIER_NUMBER,'~') AS MIM_CUSTOMS_NR
+,IFNULL(CSF_TYP_CD,'~') AS CSF_TYP_CD
+,IFNULL(SOT_MNL_BIL_RSN_CD,'~') AS SOT_MNL_BIL_RSN_CD
+,IFNULL(SOT_GCC_PORT_ID,'~') AS SOT_GCC_PORT_ID
+,IFNULL(NEACS_REP_ONLY_REC_IND,'~') AS RPT_OLY_IR
+,IFNULL(SHP_BIL_TER_TYP_CD,'~') AS  SHP_BIL_TER_TYP_CD
+,IFNULL(NEACS_RET_SVC_SHP_IND,'~') AS RS_SMT_IR
+,IFNULL(NEACS_RTS_CD,'~') AS RTS_CODE
+,IFNULL(SHR_AC_NR,'~') AS SHIP_AC_NR
+,IFNULL(NEACS_DFF,'~') AS DFF_Data
+,IFNULL(SAT.REV_REC_DRI_NR,0) AS REV_REC_DRI_NR
+,IFNULL(SAT.ADJ_CD,'~') AS ADJ_TYP_NR
+,IFNULL(SAT.REV_TRIG_DRI_NR,0) AS REV_TRIG_DRI_NR
+,IFNULL(ETL_AUDT_SRC,'~') AS INT_DOM_IR
+FROM 
+    EXTERNAL_QUERY (
+    '385627799099.us.bq_alloydb_sat_dev',
+    '''SELECT 
+    dtl_rec_id, dtl_dri_nr, adj_cd, org_cny_cd, dtn_cny_cd, bto_cny_cd, cln_cny_cd, ups_co_nr,
+    shipment_nbr ,sat_etl_prc_nr
+    FROM "sat_dev_web_app"."aging_detail_test1" age   ------ added for testing purpose To be removed 
+        JOIN "sat_dev_web_app"."tstatus" sts
+        ON age.status_id=sts.status_id
+        JOIN   "sat_dev_web_app"."trsncd" trs
+        ON age.reason_id = trs.reason_id 
+        WHERE 1=1 
+        AND sts.status_cd='APRV'
+        AND rasp_feed_sent_ir =1
+        --AND adj_cd in ('13','15')
+        AND (LOWER(trs.reason_desc) like '%adj type 13' OR LOWER(trs.reason_desc) like '%adj type 15')
+    ''' ) AS DRV,
+  `gcp-rdmr-dev.BQ_UAT2_RDMR_SAT.VW_RPT_STRUC_RASP` REF
+  INNER JOIN `gcp-ent-sat-dev.BQ_DEV_SAT_STG.SAT_ADJ1315_DTL_RASP_EXTR` SAT ON SAT.DTL_DRI_NR=REF.DTL_DRI_NR
+WHERE   
+DRV.DTL_DRI_NR=REF.DTL_DRI_NR
+AND DRV.sat_etl_prc_nr=p_ARGS
+);
+
+# Wait for delay -30 seconds
+CALL `gcp-ent-sat-dev.BQ_DEV_SAT_DM.WaitForDelay`(30);
+
+#####################################################################
+------------------------ CREATE CONTROL TABLE -----------------------
+##################################################################### 
+CREATE OR REPLACE TABLE
+  `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY_CTL` AS
+SELECT 
+  ORG_CNY_CD AS FCTL_CNY_CD,
+  REC_TYP_TE AS FCTL_FILE_TYPE, 
+  REC_STS_CD AS FCTL_REC_STS,
+  COUNT(*) AS FCTL_REC_CNT,
+  CASE WHEN REC_TYP_TE='FRT' THEN CAST(SUM(CON_STAT_QY) AS NUMERIC) ELSE 0.0 END AS FCTL_FRT_PKG_VOL,
+  CASE WHEN REC_TYP_TE='FRT' THEN CAST(SUM(CON_GRS_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_FRT_GRS_AMT,
+  CASE WHEN REC_TYP_TE='FRT' THEN CAST(SUM(ORG_CHG_FNA_NET_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_FRT_NET_AMT,
+  CASE WHEN REC_TYP_TE IN ('FRT','TAF') THEN CAST(SUM(TOT_TAX_A) AS NUMERIC) ELSE 0.0 END AS FCTL_FRT_TAX_AMT,
+  CASE WHEN REC_TYP_TE='ASY' THEN CAST(SUM(CON_STAT_QY) AS NUMERIC) ELSE 0.0 END AS FCTL_ASY_PKG_VOL,
+  CASE WHEN REC_TYP_TE='ASY' THEN CAST(SUM(CON_GRS_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_ASY_GRS_AMT,
+  CASE WHEN REC_TYP_TE='ASY' THEN CAST(SUM(ORG_CHG_FNA_NET_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_ASY_NET_AMT,
+  CASE WHEN REC_TYP_TE IN ('ASY','TAS') THEN CAST(SUM(TOT_TAX_A) AS NUMERIC) ELSE 0.0 END AS FCTL_ASY_TAX_AMT,
+  CASE WHEN REC_TYP_TE='BRK' THEN CAST(SUM(ORG_CHG_FNA_NET_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_BRK_NET_AMT,
+  CASE WHEN REC_TYP_TE IN ('BRK','BAS') THEN CAST(SUM(TOT_TAX_A) AS NUMERIC) ELSE 0.0 END AS FCTL_BRK_TAX_AMT,
+  CASE WHEN REC_TYP_TE='GOV' THEN CAST(SUM(CON_GRS_AMT) AS NUMERIC) ELSE 0.0 END AS FCTL_GOV_GRS_AMT,
+  CASE WHEN REC_TYP_TE IN ('GOV','GOS') THEN CAST(SUM(TOT_TAX_A) AS NUMERIC) ELSE 0.0 END AS FCTL_GOV_TAX_AMT,
+  0 AS FCTL_WGT_QY_KEYED,
+  0 AS FCTL_WGT_QY_BILLED,
+  --' ' AS FILLER
+  FROM `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY`
+  GROUP BY 
+  ORG_CNY_CD,
+  REC_TYP_TE,
+  REC_STS_CD;
+
+# Wait for delay -30 seconds
+CALL `gcp-ent-sat-dev.BQ_DEV_SAT_DM.WaitForDelay`(30);
+
+#####################################################################
+------------------- CREATE CONTROL HEADER FILE ----------------------
+#####################################################################
+/*
+CREATE OR REPLACE TABLE
+  `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY_CTL_HDR` AS
+SELECT
+  REPLACE(STRING_AGG(column_name),',','|') AS CTL_HEADER
+FROM `gcp-ent-sat-dev.BQ_DEV_SAT_STG.INFORMATION_SCHEMA.COLUMN_FIELD_PATHS`
+WHERE 
+  table_name='TOUTBOUND_SAT_ADJ_DLY_CTL';
+
+    EXPORT DATA
+    OPTIONS (
+      uri = 'gs://gcs-bkt-sat-dev-outbound/CTL_HEADER_FILE*.csv',
+      format = 'CSV',
+      overwrite = true,
+      header = false,
+      field_delimiter = '|')
+  AS (
+      SELECT CTL_HEADER FROM `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY_CTL_HDR`
+  );
+
+# Wait for delay -30 seconds
+CALL `gcp-ent-sat-dev.BQ_DEV_SAT_DM.WaitForDelay`(30);
+*/
+#####################################################################
+----------------- CREATE DETAILS HEADER FILE ------------------------
+#####################################################################
+
+CREATE OR REPLACE TABLE
+  `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY_DTL_HEADER` AS
+SELECT
+  REPLACE(STRING_AGG(column_name),',',p_DELIMITER) AS DTL_HEADER
+FROM
+  gcp-ent-sat-dev.BQ_DEV_SAT_STG.INFORMATION_SCHEMA.COLUMN_FIELD_PATHS
+WHERE
+  table_name='TOUTBOUND_SAT_ADJ_DLY';
+
+  --   EXPORT DATA
+  --   OPTIONS (
+  --     uri = 'gs://gcs-bkt-sat-dev-outbound/DTL_HEADER_FILE*.csv',
+  --     format = 'CSV',
+  --     overwrite = true,
+  --     header = false,
+  --     field_delimiter = '|')
+  -- AS (
+  --     SELECT DTL_HEADER FROM `gcp-ent-sat-dev.BQ_DEV_SAT_STG.TOUTBOUND_SAT_ADJ_DLY_DTL_HEADER`
+  --);
+
+
+#####################################################################
+# Wait for delay -30 seconds
+CALL `gcp-ent-sat-dev.BQ_DEV_SAT_DM.WaitForDelay`(30);
+#####################################################################
+
+END;
