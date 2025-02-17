@@ -1,0 +1,6 @@
+Flask
+guni.corn
+requests
+google-generativeai
+python-dotenv
+reportlab
