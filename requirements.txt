@@ -1,5 +1,5 @@
 Flask
-guni.corn
+gunicorn
 requests
 google-generativeai
 python-dotenv
